@@ -1,0 +1,72 @@
+name: Deploy to GCP VM
+
+on:
+  push:
+    branches:
+      - master  # Change if using another branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout Code
+      - name: 🚀 Checkout Code
+        uses: actions/checkout@v2
+
+      # Step 2: Set up Node.js environment and install dependencies
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '23.6.1'   # Update to the version you're using
+
+      - name: Install dependencies
+        run: npm install
+
+      # Step 3: Run tests
+      - name: Run Tests
+        run: npm test
+
+      # Step 4: If tests pass, proceed with deployment
+      - name: 🔑 SSH into GCP VM and Deploy
+        if: success()  # Only runs if the previous steps are successful
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.GCP_VM_IP }}
+          username: ${{ secrets.GCP_VM_USER }}
+          key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
+          script: |
+            echo "🔄 Pulling latest code..."
+            cd ~/node_docker_gcp
+            git pull origin master  # Update code
+
+            echo "🚀 Building Docker Image..."
+            docker build -t node_docker_gcp .
+
+            echo "⛔ Stopping old container..."
+            docker stop node_container || true
+            docker rm node_container || true
+
+            echo "🚢 Running new container..."
+            docker run -d -p 3000:3000 --name node_container node_docker_gcp
+
+            echo "✅ Deployment complete!"
+
+      # Step 5: Send Slack Notification
+      - name: Send Slack Notification
+        if: always()  # Runs regardless of success or failure
+        uses: slackapi/slack-github-action@v1
+        with:
+          channel-id: '#deployment-gcp'  # Replace with your Slack channel name
+          slack-message: |
+            🚀 *Deployment Status*: ${{ job.status }}
+            📌 *Repository*: ${{ github.repository }}
+            🔀 *Branch*: ${{ github.ref_name }}
+            🔢 *Commit Hash*: ${{ github.sha }}
+            🧑‍💻 *Triggered by*: ${{ github.actor }}
+            🔗 *Run URL*: <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}>
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+
+          
