@@ -2,7 +2,7 @@ FROM node:latest
 COPY package*.json ./
 RUN npm install
 COPY . .
-EXPOSE 3000
+EXPOSE 8000
 CMD ["node" , "src/index.js"]
 
 # Use the official Node.js image
@@ -21,7 +21,7 @@ RUN npm install
 COPY . .
 
 # Expose the port
-EXPOSE 3000
+EXPOSE 8000
 
 # Start the application
 CMD ["npm", "start"]
