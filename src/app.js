@@ -18,7 +18,6 @@ import labRoutes from "./routes/labRoutes.js";
 import testRoutes from "./routes/testRoutes.js";
 import resultRoutes from "./routes/resultRoutes.js";
 
-dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 8000;
